@@ -1,0 +1,604 @@
+---
+title: "Intro to Network Analysis with R"
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r load_packages}
+# install.packages("igraph")
+# install.packages("igraphdata")
+# install.packages("ape")
+library(igraphdata)
+library(igraph)
+library(ape)
+library(googlesheets4)
+library(dplyr)
+library(ggraph)
+
+gs4_auth()
+1
+
+```
+
+```{r}
+WR <- range_read("https://docs.google.com/spreadsheets/d/1_eE2cXOpu7BIo6PUy5Ufld4cX0TuwlK6V8ldxUbZNcw/edit#gid=0", sheet=1, col_names = T, trim_ws = T)
+
+
+WR %>% 
+  inner_join(WR, by=c("Project", "Year")) %>% 
+  filter(Auditor.x != Auditor.y) %>% 
+  distinct(Project, Auditor.x, Auditor.y)->WR1
+
+WR1 %>% 
+  select(-Project) %>% 
+  group_by(Auditor.x, Auditor.y) %>% 
+  summarize(Total=n())->WRdf
+
+WorkRels <- graph_from_data_frame(WRdf, directed=F, vertices=NULL)
+
+```
+
+
+
+```{r}
+
+ggraph(WorkRels, layout = "circle") +
+  geom_edge_link(edge_colour = "pink", aes(alpha = Total, width=Total)) +
+  geom_node_text(aes(label = name), col = "#193a5a", size = 4, fontface="bold") +
+  theme_graph(base_family = "Arial Narrow") +
+  theme(legend.position = "none") +
+  labs(title = "Working Relationships", subtitle = "How often have we worked with each other 2018-2020")
+
+head(WorkRels)
+?create_layout
+```
+```
+
+
+
+Load data
+
+```{r}
+data(UKfaculty)
+```
+
+Some graphics setup
+
+``` {r}
+
+#default margins
+def_marg <- c(5.1, 4.1, 4.1, 2.1)
+
+#no margins
+no_marg <- c(0, 0, 0, 0)
+
+```
+
+Plot of our network 
+
+```{r}
+par(mar=no_marg)
+plot(UKfaculty, 
+     vertex.size = 9,
+     vertex.color = "#88398A",
+     vertex.frame.color= "#88398A",
+     vertex.label.family = "Helvetica", 
+     vertex.label.cex = 0.5,
+     vertex.label.color = "white",
+     edge.arrow.size = 0.2)
+```
+
+# Exploring our Network
+
+## Overview
+
+What are the most general characteristics of this network?
+
+```{r}
+UKfaculty
+```
+
+Does the graph has multiple edges per pair of nodes? Does the graph have any loops?
+
+```{r}
+is.simple(UKfaculty)
+```
+
+# Your turn!
+
+Explore the karate network
+How many nodes does the network have?
+Is the network directed or undirected?
+What vertex and edge attributes does the network have?
+
+```{r}
+data(karate)
+karate
+```
+
+# Taking a closer look: Network Attributes 
+
+## Graph Attributes
+
+```{r}
+graph.attributes(UKfaculty)
+```
+
+## Vertex Attributes
+
+```{r}
+vertex.attributes(UKfaculty)
+
+V(UKfaculty)[[1:5]]
+
+V(UKfaculty)$Group
+
+table(V(UKfaculty)$Group)
+```
+
+## Edge Attributes
+
+```{r}
+edge.attributes(UKfaculty)
+
+E(UKfaculty)[[1:5]]
+
+E(UKfaculty)$weight
+
+summary(E(UKfaculty)$weight)
+
+par(mar=def_marg)
+hist(E(UKfaculty)$weight)
+```
+
+# Accessing and Exploring Specific Elements 
+
+## Exploring vertices 
+
+All vertices
+
+```{r}
+V(UKfaculty)
+```
+
+Specific node connections 
+
+Which nodes are connected to node 1?
+
+```{r}
+
+# outgoing ties
+neighbors(UKfaculty, 1, mode = "out")
+
+#incoming ties
+neighbors(UKfaculty, 1, mode = "in")
+
+# all ties
+neighbors(UKfaculty, 1, mode = "all")
+
+```
+
+Which nodes have less than 10 connections?
+
+```{r}
+V(UKfaculty)[degree(UKfaculty) < 10]
+```
+
+## Exploring edges
+
+Does a given edge exist?
+
+```{r}
+
+UKfaculty[1,2]
+UKfaculty[1,44]
+UKfaculty[44,1]
+
+```
+
+Edges between specific nodes
+
+```{r}
+E(UKfaculty)[1 %--% 2]
+
+# regardless of the direction
+E(UKfaculty)[1 %--% 44]
+
+# from 44 to 1
+E(UKfaculty)[1 %<-% 44]
+
+# from 1 to 44
+E(UKfaculty)[1 %->% 44]
+```
+
+Edges containing specific vertices
+
+```{r}
+
+# All incoming edges of a vertex
+E(UKfaculty)[to(1)]
+
+# All outgoing edges of a vertex
+E(UKfaculty)[from(1)]
+
+```
+
+# Your turn!
+
+Let's take a closer look at the karate network! 
+
+Running this code will tell us the general characteristics of the network and the name of its attributes. 
+
+```{r}
+karate
+```
+
+Replace every [xxx] in the following code to answer each question. 
+
+How many factions does the karate network have? 
+How many nodes belong to each faction?
+
+```{r}
+table(V(karate)$[xxx])
+```
+
+Which nodes nominated Mr. Hi?
+
+```{r}
+
+neighbors(karate, "Mr Hi", mode = [xxx])
+
+```
+
+Which nodes nominated John A?
+
+```{r}
+[xxx](karate, "John A", mode = "in")
+```
+
+How many nodes nominated both Mr Hi and John A?
+
+```{r}
+
+mh <- neighbors([xxx], "Mr Hi", mode = [xxx])
+ja <- neighbors([xxx], "John A", mode = [xxx])
+
+sum(mh %in% ja)
+
+```
+
+Is there an edge between Mr Hi and John A?
+
+```{r}
+E(karate)["Mr Hi" [xxx] "John A"]
+```
+
+# Network Visualization 
+
+Basic plot
+
+```{r}
+#setting wider margins
+par(mar=no_marg)
+
+#basic plot
+plot(UKfaculty)
+```
+
+Option 1: Setting visual properties outside the plot function
+
+We add attributes to the network
+
+Step 1 Set vertex and/or edge attributes
+
+```{r}
+
+# vertex properties 
+V(UKfaculty)$color <- "#88398A"
+
+# vertex label properties
+V(UKfaculty)$label.color <- "white"
+V(UKfaculty)$label.cex <- 0.5
+
+# edge properties
+E(UKfaculty)$color <- "gray"
+
+```
+
+Step 2 Plot network
+
+```{r}
+
+plot(UKfaculty)
+
+```
+
+Option 2 Setting visual properties inside the plot function
+
+We use the function arguments
+
+```{r}
+
+plot(UKfaculty, 
+     # === vertex properties 
+     vertex.color = "#88398A",
+     vertex.frame.color = "#88398A",
+     vertex.size = 9,
+     # === vertex label properties
+     vertex.label.cex = 0.5,
+     vertex.label.color = "white",
+     vertex.label.family = "Helvetica",
+     # === edge properties
+     edge.color = "gray",
+     edge.width = 0.5,
+     edge.arrow.size = 0.2)
+```
+
+
+This help us add different visual properties to subsets of edges or nodes. 
+
+Coloring nodes by group
+
+```{r}
+table(V(UKfaculty)$Group)
+
+mycolors <- c("black", 
+              "#D3D3D3", 
+              "#88398A", 
+              "white", 
+              "#562457")
+mylabcols <- c("white", "black", "white", "black", "white")
+
+V(UKfaculty)$color <- mycolors[V(UKfaculty)$Group]
+V(UKfaculty)$frame.color <- mycolors[V(UKfaculty)$Group]
+V(UKfaculty)$label.color <- mylabcols[V(UKfaculty)$Group]
+
+plot(UKfaculty)
+```
+
+We can also combine both options. This is usually what we do. 
+
+```{r}
+plot(UKfaculty,
+     vertex.size = 9,
+     # === vertex label properties
+     vertex.label.family = "Helvetica",
+     # === edge properties
+     edge.width = 0.5,
+     edge.arrow.size = 0.1)
+```
+
+
+Coloring specifc edges
+
+```{r}
+E(UKfaculty)$color <- "gray"
+E(UKfaculty)$color[E(UKfaculty)[47%--%28]] <- "#88398A"
+
+plot(UKfaculty, 
+     # === vertex properties 
+     vertex.size = 9,
+     # === vertex label properties
+     vertex.label.cex = 0.5,
+     vertex.label.family = "Helvetica",
+     # === edge properties
+     edge.width = 0.5,
+     edge.arrow.size = 0.1)
+
+```
+
+# Now you try it
+
+Create your own plot of the karate data. Try changing different parameters. 
+
+```{r}
+
+```
+
+# Descriptive Network Statistics
+
+```{r}
+# Density 
+graph.density(UKfaculty)
+
+# Reciprocity 
+reciprocity(UKfaculty)
+
+# Dyad Census 
+dyad_census(UKfaculty)
+
+# Transitivity 
+transitivity(UKfaculty)
+
+# Reachability 
+average.path.length(UKfaculty)
+
+diameter(UKfaculty, weights = NA)
+
+farthest_vertices(UKfaculty)
+
+# Connected components
+is.connected(UKfaculty, mode = "strong")
+
+# Articulation points
+articulation.points(UKfaculty)
+
+```
+
+# Centrality 
+
+## Degree Centrality 
+
+```{r}
+
+# Indegree 
+degree(UKfaculty, mode="in")
+par(mar= def_marg)
+hist(degree(UKfaculty, mode = "in"),
+     breaks=1:vcount(UKfaculty)-1, 
+     main="Indegree histogram")
+
+# Outdegree
+degree(UKfaculty, mode="out")
+hist(degree(UKfaculty, mode = "out"),
+     breaks=1:vcount(UKfaculty)-1, 
+     main="Outdegree histogram")
+
+# Combine indegree and outdegree 
+
+deg <- degree(UKfaculty, mode="all")
+
+V(UKfaculty)$deg <- deg
+
+par(mar= no_marg)
+
+plot(UKfaculty, 
+     vertex.size=deg)
+
+plot(UKfaculty, 
+     vertex.size=sqrt(deg)+1,
+     vertex.label.cex = 0.4,
+     edge.arrow.size = 0.1)
+
+# arrange by degree
+sort(deg, decreasing = T, index.return = T)
+
+# uniform coloring
+V(UKfaculty)$color <- "white"
+V(UKfaculty)$label.color <- "black"
+V(UKfaculty)$frame.color <- "black"
+
+#coloring 5 most central nodes
+V(UKfaculty)$color[V(UKfaculty)[c(29,37,77,62,52)]] <- "#88398A"
+
+plot(UKfaculty, 
+     vertex.size=10,
+     vertex.label.cex = 0.4,
+     edge.arrow.size = 0.1)
+```
+
+## Closeness Centrality 
+
+```{r}
+cl <- closeness(UKfaculty, mode="all", weights=NA) 
+
+centr_clo(UKfaculty, mode="all", normalized=T)
+
+# arrange by closeness
+sort(cl, decreasing = T, index.return = T)
+
+# uniform coloring
+V(UKfaculty)$color <- "white"
+
+#coloring 5 most central nodes
+V(UKfaculty)$color[V(UKfaculty)[c(29, 37, 62, 52, 69)]] <- "#88398A"
+
+plot(UKfaculty, 
+     vertex.size=10,
+     vertex.label.cex = 0.4,
+     edge.arrow.size = 0.1)
+```
+
+## Betweenness Centrality 
+
+```{r}
+btw <- betweenness(UKfaculty, directed=T, weights=NA)
+
+edge_betweenness(UKfaculty, directed=T, weights=NA)
+
+centr_betw(UKfaculty, directed=T, normalized=T)
+
+# sorting by betweenness 
+sort(btw, decreasing = T, index.return = T)
+
+V(UKfaculty)$color[V(UKfaculty)[c(62, 29, 37, 38, 52)]] <- "#88398A"
+
+plot(UKfaculty, 
+     vertex.size=10,
+     vertex.label.cex = 0.4,
+     edge.arrow.size = 0.1)
+```
+
+# Your turn!
+
+Obtain measures of density, reciprocity, dyad census, transitivity, average path length, diameter, and articulation points for the karate network. 
+
+```{r}
+
+```
+
+# Community Detection
+
+Data preparation 
+
+```{r}
+# convert to undirected graph
+und_UKfaculty <- as.undirected(UKfaculty)
+```
+
+Conduct community structure procedure
+
+
+```{r}
+kc <- fastgreedy.community(und_UKfaculty)
+```
+
+Explore results 
+
+```{r}
+class(kc)
+
+length(kc)
+
+sizes(kc)
+
+modularity(kc)
+```
+
+Plot results 
+```{r}
+plot(kc, und_UKfaculty)
+dendPlot(kc, mode = "phylo")
+```
+
+Improving the plot
+
+```{r}
+V(UKfaculty)$community <- kc$membership
+
+mycomcols <- c("black", "#D3D3D3", "#88398A", "white", "#562457")
+
+mylabcols <- c("white", "black", "white", "black", "white")
+
+V(UKfaculty)$color <- mycomcols[V(UKfaculty)$community]
+V(UKfaculty)$label.color <- mylabcols[V(UKfaculty)$community]
+
+par(mar=no_marg)
+plot(UKfaculty,
+     vertex.size = 7,
+     vertex.color = V(UKfaculty)$color, 
+     vertex.label.color = V(UKfaculty)$label.color, 
+     vertex.label.family = "Helvetica",
+     vertex.frame.color = "#88398A",
+     vertex.label.cex= 0.5,
+     edge.color = "gray60",
+     edge.arrow.size = 0.2,
+     edge.width = E(UKfaculty)$weight*0.5,
+     edge.curved = 0.5,
+     mark.groups = list(V(UKfaculty)[kc$membership==1],
+                   V(UKfaculty)[kc$membership==2], 
+                   V(UKfaculty)[kc$membership==3],
+                   V(UKfaculty)[kc$membership==4],
+                   V(UKfaculty)[kc$membership==5]), 
+          mark.col="gray90", mark.border="#88398A")
+```
+
+# Your turn!
+
+Conduct a community structure procedure with 
+the karate data. How many groups do you obtain?
+
+```{r}
+```
+

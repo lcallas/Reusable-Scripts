@@ -1,0 +1,104 @@
+---
+title: "CorpBoundaries"
+author: "Lisa Callas"
+date: "10/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+library(sf)
+library(tidyverse)
+library(rgdal)
+
+# install.packages("rgdal")
+# install.packages("sf")
+
+```
+
+#City shape
+```{r}
+coe <- st_read("C:/Users/liscal/Documents/COEmap/City of Edmonton - Corporate Boundary/geo_export_95a365da-59c9-41e7-ac1e-c728f52f9970.shp")
+
+ggplot()+
+  geom_sf(data=coe, size=3, colour="transparent", fill= "#193a5a")+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.background = element_blank())->CoEshape
+
+png(file="C:/Users/liscal/Documents/COEmap/COEshape.png",
+width=2.7, height=1.7, units="in", res=500, bg="transparent")
+CoEshape
+dev.off()
+```
+
+#sandboxes
+```{r}
+mapdata <- read.csv("//cepfile1/Users2/liscal/Home/My Documents/Sandboxes.csv", stringsAsFactors=FALSE)
+
+head(mapdata)
+
+City <- readOGR("C:/Users/liscal/Documents/COEmap/City of Edmonton - Corporate Boundary/geo_export_8e121603-52c3-4700-a448-96ab9a93a17e.shp")
+
+City
+
+ggplot() +  
+  geom_polygon(data=City, aes(x=long, y=lat, group=group))+
+ geom_point(data=mapdata, aes(x=Longitude, y=Latitude), color="red")
+
+proj4string(City)
+
+class(mapdata)
+## [1] "data.frame"
+coordinates(mapdata)<-~Longitude+Latitude
+class(mapdata)
+## [1] "SpatialPointsDataFrame"
+## attr(,"package")
+## [1] "sp"
+
+# does it have a projection/coordinate system assigned?
+proj4string(mapdata) # nope
+## [1] NA
+
+# we know that the coordinate system is NAD83 so we can manually
+# tell R what the coordinate system is
+proj4string(mapdata)<-CRS("+proj=longlat +datum=NAD83")
+
+# now we can use the spTransform function to project. We will project
+# the mapdata and for coordinate reference system (CRS) we will
+# assign the projection from counties
+
+mapdata<-spTransform(mapdata, CRS(proj4string(City)))
+
+# double check that they match
+identical(proj4string(mapdata),proj4string(City))
+
+# ggplot can't deal with a SpatialPointsDataFrame so we can convert back to a data.frame
+mapdata<-data.frame(mapdata)
+
+# we're not dealing with lat/long but with x/y
+# this is not necessary but for clarity change variable names
+names(mapdata)[names(mapdata)=="Longitude"]<-"x"
+names(mapdata)[names(mapdata)=="Latitude"]<-"y"
+
+# now create the map
+ggplot() +
+  geom_polygon(data=City, aes(x=long, y=lat, group=group),fill="grey90", colour="#193a5a")+  
+  geom_point(data=mapdata, aes(x=x, y=y), color="#193a5a", size=0.5)+
+  coord_equal(ratio=1)+
+  theme(axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.background = element_blank())+
+  labs(x="", y="")->sandboxes
+
+png(file="C:/Users/liscal/Documents/COEmap/sandboxes.png",
+width=4, height=3, units="in", res=500, bg="transparent")
+sandboxes
+dev.off()
+
+```
+
