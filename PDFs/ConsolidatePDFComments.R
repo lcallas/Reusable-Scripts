@@ -78,7 +78,7 @@ CompleteList <- bind_rows(completed, separated) #combine cleaned tables into one
 
 #remove unnecessary header information from column contents
 CompleteList %>% 
-  mutate(Page= str_extract(Page,"[:digit:]"),
+  mutate(Page= str_extract(Page,"Page:\\s"),
          Author= str_remove(Author, "Author:\\s"),
          Subject= str_remove(Subject,"Subject:\\s"),
          Date= str_remove(Date, "Date:\\s"))->ListofComments
