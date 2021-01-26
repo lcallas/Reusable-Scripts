@@ -45,7 +45,7 @@ allSummaries %>%
   mutate(value=str_sub(value,4))->AS1
 
 #identify the max number of individual comments in a combined text block for separating
-n_vars <- AS1$value %>% str_count(pattern = "Author:") %>% max(na.rm=T) + 1
+n_vars <- AS1$value %>% str_count(pattern = "Author:") %>% max(na.rm = T) + 1
 
 #separate a text block with multiple comments into individual comment rows
 AS1 %>% 
