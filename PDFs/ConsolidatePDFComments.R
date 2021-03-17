@@ -15,11 +15,13 @@
 #Load Libraries
 library(tidyverse)
 library(pdftools)
+library(openxlsx)
+
 
 #---Function---#
 #This function requires 2 arguments: x=the path to the folder that contains all of the pdfs
-# and y= the path and filename with the .csv filetype for an output spreadsheet.
-#example: ConsolidatedComments(x="C://MyDocuments/PdfFiles/", y="C://MyDocuments/consolidatedcomments.csv")
+# and y= the path and filename with the .xlsx filetype for an output spreadsheet.
+#example: ConsolidatedComments(x="C://MyDocuments/PdfFiles/", y="C://MyDocuments/consolidatedcomments.xlsx")
 
 ConsolidatedComments <- function(x=importpath, y=exportpath){
 
@@ -85,13 +87,14 @@ CompleteList %>%
 
 ListofComments$Page <- as.numeric(ListofComments$Page)#Change Page column from character to numeric
 
-write_csv(ListofComments, y) #export a .csv file
+write.xlsx(ListofComments, y) #export a .xlsx file
 
 }
   
 #---End of Function---#
 
 
-# Call Function
+
+# Call Function for testing
 # ConsolidatedComments(x = "C:/Users/liscal/Downloads/AcrobatSummaries/",
-#      y= "C:/Users/liscal/Downloads/AcrobatSummaries/testfile.csv")
+#       y= "C:/Users/liscal/Downloads/testfile.xlsx")
