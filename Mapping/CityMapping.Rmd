@@ -14,26 +14,31 @@ knitr::opts_chunk$set(echo = TRUE)
 library(sf)
 library(tidyverse)
 library(rgdal)
+library(RSocrata)
 
-# install.packages("rgdal")
-# install.packages("sf")
+install.packages("geojsonio")
+
 
 ```
 
 #City shape
 ```{r}
-coe <- st_read("C:/Users/liscal/Documents/COEmap/City of Edmonton - Corporate Boundary/geo_export_95a365da-59c9-41e7-ac1e-c728f52f9970.shp")
+
+coe <- read_sf("https://data.edmonton.ca/resource/vjhm-u2q4.geojson")
+
+setwd("E:\\Repos\\Reusable-Scripts\\Mapping")
+
+coe <- st_read("geo_export_8e121603-52c3-4700-a448-96ab9a93a17e.shp")
 
 ggplot()+
-  geom_sf(data=coe, size=3, colour="transparent", fill= "#193a5a")+
+  geom_sf(data=coe, size=3, colour="#193a5a", fill= "white")+
   theme(axis.text = element_blank(),
         axis.ticks = element_blank(),
         panel.background = element_blank())->CoEshape
 
-png(file="C:/Users/liscal/Documents/COEmap/COEshape.png",
-width=2.7, height=1.7, units="in", res=500, bg="transparent")
-CoEshape
-dev.off()
+ggsave("COEShape.png", CoEshape, width = 2, height=4, units = "in", bg="transparent")
+
+
 ```
 
 #sandboxes
